@@ -1,0 +1,29 @@
+{
+    "websocket_base": "wss://stream.binance.com:9443/ws/",
+    "streams": {
+        "trade": "trade",
+        "agg_trade": "aggTrade",
+        "depth": "depth20@100ms",
+        "book_ticker": "bookTicker",
+        "kline_1m": "kline_1m",
+        "kline_1h": "kline_1h",
+        "ticker_24hr": "ticker"
+    },
+    "symbols": {
+        "BTC_USDT": "btcusdt",
+        "ETH_USDT": "ethusdt",
+        "BNB_USDT": "bnbusdt",
+        "ADA_USDT": "adausdt",
+        "XRP_USDT": "xrpusdt",
+        "SOL_USDT": "solusdt",
+        "DOGE_USDT": "dogeusdt",
+        "MATIC_USDT": "maticusdt",
+        "DOT_USDT": "dotusdt",
+        "LTC_USDT": "ltcusdt",
+        "AVAX_USDT": "avaxusdt",
+        "SHIB_USDT": "shibusdt"
+    },
+    "examples": {
+        "make_url": "wss://stream.binance.com:9443/ws/btcusdt@trade"
+    }
+}
