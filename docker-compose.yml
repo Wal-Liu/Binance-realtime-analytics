@@ -50,6 +50,7 @@ services:
       volumes:
         - ./src:/opt/workspace
       networks: [real-time-net]
+      workspace: /opt/workspace
 
   spark-worker:
     image: bitnami/spark:3.5.3
