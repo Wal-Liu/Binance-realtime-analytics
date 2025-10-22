@@ -3,11 +3,78 @@ from pyspark.sql.functions import from_json, col, window, sum as _sum
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, LongType
 import json
 from pathlib import Path
+import psycopg2
 
 
 KAFKA_FILE = Path("/opt/workspace/volume/configs/kafka.json")
 with open(KAFKA_FILE, "r", encoding="utf-8") as f:
     KAFKA = json.load(f)
+
+POSTGRE_FILE = Path("/opt/workspace/volume/configs/postgre.json")
+with open(POSTGRE_FILE, "r", encoding="utf-8") as f:
+    POSTGRE = json.load(f)
+
+
+def write_to_postgres(batch_df, batch_id):
+    try:
+        if (batch_df.count() == 0 ):
+            return # only write if data exists
+        create_table() # ensure table are created
+
+        conn = psycopg2.connect(
+            host = "postgres",
+            port = 5432,
+            database = "crypto_db",
+            user="postgres",
+            password="your_password"
+        )
+        cursor = conn.cursor()
+        for row in batch_df.collect():
+            cursor.execute(
+                """
+                INSERT INTO crypto_volume (window_start, window_end, symbol, total_volume)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (window_start, window_end, symbol)
+                DO UPDATE SET total_volume = EXCLUDED.total_volume;
+                """,
+                (row.window_start, row.window_end, row.symbol, row.total_volume)
+            )
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error writing to PostgreSQL: {e}")
+
+def create_table():
+    try:
+        conn = psycopg2.connect(
+            host="postgres",
+            port=5432,
+            database="crypto_db",
+            user="postgres",
+            password="your_password"
+        )
+        cursor = conn.cursor()
+        delete_old = """DROP TABLE IF EXISTS crypto_volume;"""
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS crypto_volume (
+            id SERIAL PRIMARY KEY,
+            window_start TIMESTAMP,
+            window_end TIMESTAMP,
+            symbol VARCHAR(20),
+            total_volume NUMERIC,
+            UNIQUE (window_start, window_end, symbol)
+        );
+        """
+        create_index_query = " CREATE INDEX IF NOT EXISTS idx_window_start ON crypto_volume(window_start);"
+        cursor.execute(delete_old)
+        cursor.execute(create_table_query)
+        cursor.execute(create_index_query)
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error creating table: {e}")
 
 # 1. Khởi tạo SparkSession
 spark = (
@@ -24,7 +91,7 @@ df_raw = (
     .format("kafka")
     .option("kafka.bootstrap.servers", KAFKA["bootstrap.servers"])
     .option("subscribe", KAFKA["topic"])
-    .option("startingOffsets", "latest")
+    .option("startingOffsets", "earliest")
     .load()
 )
 
@@ -66,10 +133,8 @@ volume_df = (
 # 7. Ghi kết quả ra console (có thể thay = Kafka, Delta, hoặc ClickHouse)
 query = (
     volume_df.writeStream
+    .foreachBatch(write_to_postgres)
     .outputMode("update")
-    .format("console")
-    .option("truncate", "false")
-    .option("numRows", 50)
     .trigger(processingTime="10 seconds")
     .start()
 )

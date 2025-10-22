@@ -1,0 +1,6 @@
+{
+    "host": "postgres:5432",
+    "user": "postgres",
+    "password": "your_password",
+    "db": "crypto_db"
+}

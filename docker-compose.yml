@@ -29,31 +29,34 @@ services:
     volumes:
       - ./src/ingestion:/app
     command: 
-      - ["sleep", "infinity"]
+      ["sleep", "infinity"]
       # - ["python", "-u", "./src/makeStream.py"]
     networks:
       - real-time-net
 
 
   spark-master:
-      image: bitnami/spark:3.5.3
-      environment:
-        - SPARK_MODE=master
-        - SPARK_RPC_AUTHENTICATION_ENABLED=no
-        - SPARK_RPC_ENCRYPTION_ENABLED=no
-        - SPARK_SSL_ENABLED=no
-        - SPARK_MASTER_WEBUI_PORT=8080
-        - SPARK_DAEMON_MEMORY=1g
-      ports:
-        - "7077:7077"   # Spark master RPC
-        - "8080:8080"   # Spark master UI
-      volumes:
-        - ./src:/opt/workspace
-      networks: [real-time-net]
-      workspace: /opt/workspace
+    build:
+      context: .
+      dockerfile: spark.Dockerfile
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_MASTER_WEBUI_PORT=8080
+      - SPARK_DAEMON_MEMORY=1g
+    ports:
+      - "7077:7077"   # Spark master RPC
+      - "8080:8080"   # Spark master UI
+    volumes:
+      - ./src:/opt/workspace
+    networks: [real-time-net]
 
   spark-worker:
-    image: bitnami/spark:3.5.3
+    build:
+      context: .
+      dockerfile: spark.Dockerfile
     depends_on: [spark-master]
     environment:
       - SPARK_MODE=worker
@@ -67,6 +70,39 @@ services:
     volumes:
       - ./src:/opt/workspace
     networks: [real-time-net]
+
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: crypto_db
+    ports:
+      - "5432:5432"
+    networks:
+      - real-time-net
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: your_grafana_password
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    networks:
+      - real-time-net
+    volumes:
+      - grafana-storage:/var/lib/grafana
+
+volumes:
+  pgdata:
+  grafana-storage:
 
 networks:
   real-time-net:
