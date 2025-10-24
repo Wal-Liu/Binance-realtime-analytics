@@ -67,7 +67,7 @@ def create_table():
         );
         """
         create_index_query = " CREATE INDEX IF NOT EXISTS idx_window_start ON crypto_volume(window_start);"
-        cursor.execute(delete_old)
+        # cursor.execute(delete_old)
         cursor.execute(create_table_query)
         cursor.execute(create_index_query)
         conn.commit()
