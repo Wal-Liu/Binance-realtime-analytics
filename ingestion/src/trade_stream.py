@@ -5,6 +5,11 @@ import threading
 import time
 from kafka import KafkaProducer
 
+import os
+
+current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(current_dir)
+
 BINANCE_FILE = Path("./configs/binance.json")
 KAFKA_FILE = Path("./configs/kafka.json")
 
@@ -19,7 +24,7 @@ with open(KAFKA_FILE, "r", encoding="utf-8") as f:
     KAFKA = json.load(f)
 
 KAFKA_BOOTSTRAP = KAFKA["bootstrap.servers"]
-KAFKA_TOPIC = KAFKA["topic"]
+KAFKA_TOPIC = KAFKA["trade_topic"]
 
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BOOTSTRAP,
@@ -45,7 +50,7 @@ def delivery_report(err, msg):
 def on_message(ws, message):
     try:
         data = json.loads(message)
-
+        
         if not all(k in data for k in ("s", "p", "q", "T")):
             return
 
@@ -55,7 +60,6 @@ def on_message(ws, message):
             "quantity": float(data["q"]),
             "timestamp": data["T"],
         }
-
         # Gửi vào Kafka
         producer.send(
             KAFKA_TOPIC,
@@ -63,7 +67,7 @@ def on_message(ws, message):
             key=data["s"].encode("utf-8")           # key phải là bytes
         )
 
-        print(f"[KAFKA] Sent {record['symbol']} price={record['price']}")
+        print(f"[Trade_Kafka] Sent {record['symbol']} price={record['price']}")
     
     except Exception as e:
         print(f"Raw message: {message}")
@@ -97,11 +101,7 @@ def singal_stream(baseurl: str, symbol: str, stream: str):
             time.sleep(5)  # Wait before reconnecting
 
 
-if __name__ == "__main__":
-    
-
-    symbols_to_stream = ["BTC_USDT", "ETH_USDT", "BNB_USDT"]
-
+def run(symbols_to_stream):
     threads = []
 
     for symbol in symbols_to_stream:
@@ -119,3 +119,8 @@ if __name__ == "__main__":
         producer.flush()
         producer.close()
         print("Kafka producer closed.")
+
+if __name__ == "__main__":
+    symbols_to_stream = ["BTC_USDT", "ETH_USDT", "BNB_USDT"]
+    run(symbols_to_stream)
+

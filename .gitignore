@@ -1,1 +1,4 @@
 /src/ingestion/logs
+
+# Ignore Python bytecode files
+**/__pycache__/
