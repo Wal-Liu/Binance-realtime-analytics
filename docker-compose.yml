@@ -19,7 +19,7 @@ services:
     ports:
       - "19092:9092"
     volumes:
-      - kafka-data:/var/lib/kafka/data
+      - kafka-data:/var/lib/kafka/data  
     healthcheck:
       test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/9092"]
       interval: 5s
@@ -68,6 +68,20 @@ services:
     volumes:
       - ./spark-apps:/opt/workspace
     working_dir: /opt/workspace
+
+  spark-worker:
+    build:
+      context: ./spark
+      dockerfile: spark.Dockerfile
+    user: root
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+    volumes:
+      - ./spark-apps:/opt/workspace
 
 
   postgres:
