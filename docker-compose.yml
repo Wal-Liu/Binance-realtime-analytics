@@ -2,6 +2,7 @@ version: '3.9'
 
 services:
   kafka:
+    container_name: binance-kafka
     image: apache/kafka:4.0.1-rc2
     environment:
       KAFKA_NODE_ID: 1
@@ -29,7 +30,7 @@ services:
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
+    container_name: binance-kafka-ui
     ports:
       - "18085:8080"  
     environment:
@@ -55,6 +56,7 @@ services:
 
 
   spark-master:
+    container_name: binance-spark-master
     build:
       context: ./spark
       dockerfile: spark.Dockerfile
@@ -70,6 +72,7 @@ services:
     working_dir: /opt/workspace
 
   spark-worker:
+    container_name: binance-spark-worker
     build:
       context: ./spark
       dockerfile: spark.Dockerfile
@@ -85,6 +88,7 @@ services:
 
 
   postgres:
+    container_name: binance-postgres
     image: postgres:15
     environment:
       POSTGRES_USER: postgres
@@ -97,7 +101,7 @@ services:
 
   grafana:
     image: grafana/grafana:12.3.0-18701397209
-    container_name: grafana
+    container_name: binance-grafana
     environment:
       GF_SECURITY_ADMIN_PASSWORD: your_grafana_password
     ports:
