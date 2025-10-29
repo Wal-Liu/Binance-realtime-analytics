@@ -36,8 +36,8 @@ def create_tables():
         cursor = conn.cursor()
         
         # Bảng volume
-        drop_volume_table = "DROP TABLE IF EXISTS crypto_volume;"
-        cursor.execute(drop_volume_table)   
+        # drop_volume_table = "DROP TABLE IF EXISTS crypto_volume;"
+        # cursor.execute(drop_volume_table)   
         create_volume_table = """
         CREATE TABLE IF NOT EXISTS crypto_volume (
             id SERIAL PRIMARY KEY,
@@ -52,8 +52,8 @@ def create_tables():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_volume_window_start ON crypto_volume(window_start);")
 
         # Bảng MA
-        drop_ma_table = "DROP TABLE IF EXISTS crypto_ma;"
-        cursor.execute(drop_ma_table)
+        # drop_ma_table = "DROP TABLE IF EXISTS crypto_ma;"
+        # cursor.execute(drop_ma_table)
         create_ma_table = """
         CREATE TABLE IF NOT EXISTS crypto_ma (
             id SERIAL PRIMARY KEY,
@@ -69,8 +69,8 @@ def create_tables():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_ma_time_start ON crypto_ma(time_start);")
 
         # Bảng alert
-        drop_alert_table = "DROP TABLE IF EXISTS crypto_alert;"
-        cursor.execute(drop_alert_table)
+        # drop_alert_table = "DROP TABLE IF EXISTS crypto_alert;"
+        # cursor.execute(drop_alert_table)
         create_alert_table = """
         CREATE TABLE IF NOT EXISTS crypto_alert (
             id SERIAL PRIMARY KEY,
