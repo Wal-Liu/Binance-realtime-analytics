@@ -19,6 +19,7 @@ with open(POSTGRE_FILE, "r", encoding="utf-8") as f:
 
 DEFAULT_THRESHOLD_MULTIPLIER = 1.5  # ngưỡng cảnh báo = MA_5min * hệ số
 
+
 latest_ma_threshold = defaultdict(lambda: None)
 
 # -- Tạo các bảng trong DB
@@ -35,8 +36,8 @@ def create_tables():
         cursor = conn.cursor()
         
         # Bảng volume
-        # drop_volume_table = "DROP TABLE IF EXISTS crypto_volume;"
-        # cursor.execute(drop_volume_table)   
+        drop_volume_table = "DROP TABLE IF EXISTS crypto_volume;"
+        cursor.execute(drop_volume_table)   
         create_volume_table = """
         CREATE TABLE IF NOT EXISTS crypto_volume (
             id SERIAL PRIMARY KEY,
@@ -51,8 +52,8 @@ def create_tables():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_volume_window_start ON crypto_volume(window_start);")
 
         # Bảng MA
-        # drop_ma_table = "DROP TABLE IF EXISTS crypto_ma;"
-        # cursor.execute(drop_ma_table)
+        drop_ma_table = "DROP TABLE IF EXISTS crypto_ma;"
+        cursor.execute(drop_ma_table)
         create_ma_table = """
         CREATE TABLE IF NOT EXISTS crypto_ma (
             id SERIAL PRIMARY KEY,
@@ -68,13 +69,16 @@ def create_tables():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_ma_time_start ON crypto_ma(time_start);")
 
         # Bảng alert
+        drop_alert_table = "DROP TABLE IF EXISTS crypto_alert;"
+        cursor.execute(drop_alert_table)
         create_alert_table = """
         CREATE TABLE IF NOT EXISTS crypto_alert (
             id SERIAL PRIMARY KEY,
             alert_time TIMESTAMP NOT NULL,
             symbol VARCHAR(20),
             alert_type VARCHAR(50),
-            alert_value NUMERIC
+            alert_value NUMERIC,
+            old_value NUMERIC
         );
         """
         cursor.execute(create_alert_table)
@@ -110,18 +114,6 @@ def write_volume_to_postgres(batch_df, batch_id):
                 """,
                 (row.window_start, row.window_end, row.symbol, row.total_volume)
             )
-
-            # Kiểm tra alert với ngưỡng hiện tại
-            threshold = latest_ma_threshold.get(row.symbol)
-
-            if threshold is not None and row.total_volume > threshold * DEFAULT_THRESHOLD_MULTIPLIER:
-                # cursor.execute("""
-                # INSERT INTO crypto_alert(alert_time, symbol, alert_type, alert_value)
-                # VALUES(%s, %s, %s, %s);
-                # """, (row.window_end, row.symbol, "Volume Spike", row.total_volume))
-
-                print(f"ALERT: {row.symbol} - Volume: {row.total_volume} > Threshold: {threshold * DEFAULT_THRESHOLD_MULTIPLIER}")
-
         conn.commit()
         cursor.close()
         conn.close()
@@ -150,10 +142,30 @@ def write_ma_to_postgres(batch_df, batch_id):
                 ON CONFLICT (time_start, time_end, symbol, ma_type)
                 DO UPDATE SET ma_value = EXCLUDED.ma_value;
                 """,
-                (row.window_start, row.window_end, row.symbol, 'MA_5min', row.ma_5min)
+                (row.time_start, row.time_end, row.symbol, 'MA_5min', row.ma_5min)
             )
+
+            # Kiểm tra alert với ngưỡng hiện tại
+            threshold = latest_ma_threshold.get(row.symbol)
+
+            if threshold is not None and row.ma_5min >= threshold * DEFAULT_THRESHOLD_MULTIPLIER:
+                cursor.execute("""
+                INSERT INTO crypto_alert(alert_time, symbol, alert_type, alert_value, old_value)
+                VALUES(%s, %s, %s, %s, %s);
+                """, (row.time_start, row.symbol, "Spike Up Alert", row.ma_5min, threshold))
+
+                print(f"ALERT: {row.symbol} - MA: {row.ma_5min} > Threshold: {threshold * DEFAULT_THRESHOLD_MULTIPLIER}")
+
+            if threshold is not None and threshold >=  row.ma_5min * DEFAULT_THRESHOLD_MULTIPLIER:
+                cursor.execute("""
+                INSERT INTO crypto_alert(alert_time, symbol, alert_type, alert_value, old_value)
+                VALUES(%s, %s, %s, %s, %s);
+                """, (row.time_start, row.symbol, "Spike Down Alert", row.ma_5min, threshold))
+
+                print(f"ALERT: {row.symbol} - MA: {row.ma_5min} < Threshold: {threshold * DEFAULT_THRESHOLD_MULTIPLIER}")
+
+
             # Cập nhật ngưỡng trong biến toàn cục
-            print(f"Processing MA for {row.symbol}: {row.ma_5min}")
             latest_ma_threshold[row.symbol] = row.ma_5min
             print(f"Updated MA threshold for {row.symbol}: {row.ma_5min}")
 
@@ -170,18 +182,8 @@ spark = (
     .appName("CryptoVolumeStream")
     .getOrCreate()
 )
-spark.conf.set("spark.sql.streaming.statefulOperator.checkCorrectness.enabled", "false")
 spark.sparkContext.setLogLevel("WARN")
 
-# # 2. Đọc stream từ Kafka
-# df_raw = (
-#     spark.readStream
-#     .format("kafka")
-#     .option("kafka.bootstrap.servers", KAFKA["bootstrap.servers"])
-#     .option("subscribe", KAFKA["topic"])
-#     .option("startingOffsets", "earliest")
-#     .load()
-# )
 
 # 3. Định nghĩa schema cho dữ liệu JSON
 schema = StructType([
@@ -191,85 +193,56 @@ schema = StructType([
     StructField("timestamp", LongType())
 ])
 
-# # 4. Parse JSON
-# df_parsed = (
-#     df_raw
-#     .selectExpr("CAST(value AS STRING)")
-#     .select(from_json(col("value"), schema).alias("data"))
-#     .select("data.*")
-# )
+df_raw = (spark.readStream
+    .format("kafka")
+    .option("kafka.bootstrap.servers", KAFKA["bootstrap.servers"])
+    .option("subscribe", KAFKA["topic"])
+    .option("startingOffsets", "latest")
+    .load())
 
-# # 5. Chuyển timestamp
-# df_with_time = df_parsed.withColumn("event_time", (col("timestamp") / 1000).cast("timestamp"))
+df_parsed = df_raw.selectExpr("CAST(value AS STRING)") \
+    .select(from_json(col("value"), schema).alias("data")) \
+    .select("data.*")
 
-# # ---------------------------
-# # 1. VOLUME: Window 1 phút, trượt 30s
-# # ---------------------------
-# volume_df = (
-#     df_with_time
-#     .withWatermark("event_time", "2 minutes")  # Watermark quan trọng
-#     .groupBy(
-#         window(col("event_time"), "1 minute", "30 seconds"),
-#         col("symbol")
-#     )
-#     .agg(_sum("quantity").alias("total_volume"))
-#     .select(
-#         col("window.start").alias("window_start"),
-#         col("window.end").alias("window_end"),
-#         "symbol",
-#         "total_volume"
-#     )
-# )
+df_with_time = df_parsed.withColumn("event_time", (col("timestamp") / 1000).cast("timestamp"))
 
+# ---------------------------
+# 1. Volume 1 phút - trượt 30s
+# ---------------------------
 volume_df = (
-    spark.readStream
-        .format("kafka")
-        .option("kafka.bootstrap.servers", KAFKA["bootstrap.servers"])
-        .option("subscribe", KAFKA["topic"])
-        .option("startingOffsets", "latest")
-        .load()
-        .selectExpr("CAST(value AS STRING)")                # Chuẩn hóa dữ liệu value
-        .select(from_json(col("value"), schema).alias("data"))
-        .select(
-            col("data.symbol").alias("symbol"),
-            col("data.quantity").alias("quantity"),
-            (col("data.timestamp")/1000).cast("timestamp").alias("event_time")
-        )
-        .withWatermark("event_time", "2 minutes")
-        .groupBy(
-            window(col("event_time"), "1 minute", "30 seconds"),
-            col("symbol")
-        )
-        .agg(_sum("quantity").alias("total_volume"))
-        .select(
-            col("window.start").alias("window_start"),
-            col("window.end").alias("window_end"),
-            "symbol",
-            "total_volume"
-        )
-)
-
-
-# ---------------------------
-# BƯỚC 2: TÍNH MA
-# ---------------------------
-ma_df = (
-    volume_df
+    df_with_time
     .groupBy(
-        window(col("window_end"), "5 minutes", "4 minutes"),
-        col("symbol")   
+        window(col("event_time"), "1 minute", "30 seconds"),
+        col("symbol")
     )
-    .agg(avg("total_volume").alias("ma_5min"))
+    .agg(_sum("quantity").alias("total_volume"))
     .select(
         col("window.start").alias("window_start"),
         col("window.end").alias("window_end"),
+        "symbol",
+        "total_volume"
+    )
+)
+
+# ---------------------------
+# 2. MA_5min (trượt 30s)
+# ---------------------------
+ma_df = (
+    df_with_time
+    .groupBy(
+        window(col("event_time"), "5 minutes", "30 seconds"),
+        col("symbol")
+    )
+    .agg(avg("price").alias("ma_5min"))
+    .select(
+        col("window.start").alias("time_start"),
+        col("window.end").alias("time_end"),
         "symbol",
         "ma_5min"
     )
 )
 
-
-# 9. Start ba streaming query đồng thời
+# 9. Start streaming query đồng thời
 
 # Query 1: Ghi volume vào bảng crypto_volume
 query_volume = (
