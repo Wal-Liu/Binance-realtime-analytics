@@ -6,8 +6,8 @@ services:
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093 # Listen on all interfaces
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092 # Use service name for inter-container communication
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
@@ -18,12 +18,26 @@ services:
       KAFKA_NUM_PARTITIONS: 3
     ports:
       - "19092:9092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
     healthcheck:
       test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/9092"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "18085:8080"  
+    environment:
+      KAFKA_CLUSTERS_0_NAME: kraft-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092  
+      KAFKA_CLUSTERS_0_ZOOKEEPER: ""              
+    depends_on:
+      - kafka
 
   binance-stream:
     build:
@@ -82,3 +96,4 @@ services:
 volumes:
   pgdata:
   grafana-storage:
+  kafka-data:
