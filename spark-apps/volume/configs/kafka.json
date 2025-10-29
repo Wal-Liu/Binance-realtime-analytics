@@ -1,5 +1,5 @@
 {
     "bootstrap.servers": "kafka:9092",
-    "topic": "binance_streams",
+    "topic": "binance_streams_trade",
     "group_id": "binance-streams-group"
-}
+}  
