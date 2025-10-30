@@ -88,4 +88,4 @@ ALTER TABLE donchian_channel
 ALTER COLUMN breakout_signal SET NOT NULL;
 ```
 
-> Vo Grafana import file spark-apps/trend/dashboard/MFI.json
+> Vo Grafana import file spark-apps/momentum/dashboard/MFI.json
