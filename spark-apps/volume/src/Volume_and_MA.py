@@ -17,7 +17,9 @@ POSTGRE_FILE = Path("/opt/workspace/volume/configs/postgre.json")
 with open(POSTGRE_FILE, "r", encoding="utf-8") as f:
     POSTGRE = json.load(f)
 
-DEFAULT_THRESHOLD_MULTIPLIER = 1.5  # ngưỡng cảnh báo = MA_5min * hệ số
+THRESHOLD_FILE = Path("/opt/workspace/volume/configs/alert_threshold.json")
+with open(THRESHOLD_FILE, "r", encoding="utf-8") as f:
+    THRESHOLDS = json.load(f)
 
 
 latest_ma_threshold = defaultdict(lambda: None)
@@ -69,8 +71,8 @@ def create_tables():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_ma_time_start ON crypto_ma(time_start);")
 
         # Bảng alert
-        # drop_alert_table = "DROP TABLE IF EXISTS crypto_alert;"
-        # cursor.execute(drop_alert_table)
+        drop_alert_table = "DROP TABLE IF EXISTS crypto_alert;"
+        cursor.execute(drop_alert_table)
         create_alert_table = """
         CREATE TABLE IF NOT EXISTS crypto_alert (
             id SERIAL PRIMARY KEY,
@@ -148,27 +150,51 @@ def write_ma_to_postgres(batch_df, batch_id):
             # Kiểm tra alert với ngưỡng hiện tại
             threshold = latest_ma_threshold.get(row.symbol)
 
-            if threshold is not None and row.ma_5min >= threshold * DEFAULT_THRESHOLD_MULTIPLIER:
+            if threshold is None:
+                # Cập nhật ngưỡng trong biến toàn cục
+                latest_ma_threshold[row.symbol] = row.ma_5min
+                print(f"Updated MA threshold for {row.symbol}: {row.ma_5min}")
+                continue
+
+            delta = (row.ma_5min - threshold) / threshold
+
+            if abs(delta) >= THRESHOLDS["spike_alert_threshold"]:
+                if delta > 0:
+                    # Ghi cảnh báo vào bảng crypto_alert
+                    cursor.execute("""
+                    INSERT INTO crypto_alert(alert_time, symbol, alert_type, alert_value, old_value)
+                    VALUES(%s, %s, %s, %s, %s);
+                    """, (row.time_start, row.symbol, "MA Up Spike Alert", row.ma_5min, threshold))
+                else:
+                    # Ghi cảnh báo vào bảng crypto_alert
+                    cursor.execute("""
+                    INSERT INTO crypto_alert(alert_time, symbol, alert_type, alert_value, old_value)
+                    VALUES(%s, %s, %s, %s, %s);
+                    """, (row.time_start, row.symbol, "MA Down Spike Alert", row.ma_5min, threshold))
+                # Cập nhật ngưỡng trong biến toàn cục
+                latest_ma_threshold[row.symbol] = row.ma_5min
+                print(f"Updated MA threshold for {row.symbol}: {row.ma_5min}")
+                continue
+            
+            if abs(delta) >= THRESHOLDS["surge_alert_threshold"] :
                 cursor.execute("""
                 INSERT INTO crypto_alert(alert_time, symbol, alert_type, alert_value, old_value)
                 VALUES(%s, %s, %s, %s, %s);
-                """, (row.time_start, row.symbol, "Spike Up Alert", row.ma_5min, threshold))
+                """, (row.time_start, row.symbol, "MA Surge Alert", row.ma_5min, threshold))
+                # Cập nhật ngưỡng trong biến toàn cục
+                latest_ma_threshold[row.symbol] = row.ma_5min
+                print(f"Updated MA threshold for {row.symbol}: {row.ma_5min}")
+                continue
 
-                print(f"ALERT: {row.symbol} - MA: {row.ma_5min} > Threshold: {threshold * DEFAULT_THRESHOLD_MULTIPLIER}")
-
-            if threshold is not None and threshold >=  row.ma_5min * DEFAULT_THRESHOLD_MULTIPLIER:
+            if abs(delta) >= THRESHOLDS["shift_alert_threshold"] :
                 cursor.execute("""
                 INSERT INTO crypto_alert(alert_time, symbol, alert_type, alert_value, old_value)
                 VALUES(%s, %s, %s, %s, %s);
-                """, (row.time_start, row.symbol, "Spike Down Alert", row.ma_5min, threshold))
-
-                print(f"ALERT: {row.symbol} - MA: {row.ma_5min} < Threshold: {threshold * DEFAULT_THRESHOLD_MULTIPLIER}")
-
-
-            # Cập nhật ngưỡng trong biến toàn cục
-            latest_ma_threshold[row.symbol] = row.ma_5min
-            print(f"Updated MA threshold for {row.symbol}: {row.ma_5min}")
-
+                """, (row.time_start, row.symbol, "MA Shift Alert", row.ma_5min, threshold))
+                # Cập nhật ngưỡng trong biến toàn cục
+                latest_ma_threshold[row.symbol] = row.ma_5min
+                print(f"Updated MA threshold for {row.symbol}: {row.ma_5min}")
+                continue
 
         conn.commit()
         cursor.close()
