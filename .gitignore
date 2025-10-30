@@ -2,3 +2,6 @@
 
 # Ignore Python bytecode files
 **/__pycache__/
+
+spark-apps/aroon/checkpoints/*
+spark-apps/adx/checkpoints/*

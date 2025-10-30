@@ -1,0 +1,5 @@
+{
+  "bootstrap.servers": "kafka:9092",
+  "topic": "binance_trade_streams",
+  "kline_topic": "binance_kline_streams"
+}
