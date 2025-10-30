@@ -41,7 +41,7 @@ Tracking data for three coins: `BTC`, `BNB`, `ETH`.
 ## Demo
 
 ### Volume and MA 
-https://github.com/Wal-Liu/Binance-realtime-analytics/blob/ReadMeEdit/image_videos/Volume_MA_demo.mp4
+https://github.com/user-attachments/assets/5afb524f-54a6-4708-a5b8-4ec03f9339b5
 
 ## Technologies Used
 - Python, Apache Kafka, Apache Spark
