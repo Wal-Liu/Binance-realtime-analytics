@@ -49,7 +49,7 @@ def main():
     # Tính các thành phần cơ bản (Trung bình VÀ Độ lệch chuẩn)
     agg_df = kline_with_timestamp_df \
         .groupBy(
-            window(col("event_timestamp"), "5 minutes", "1 minute"), 
+            window(col("event_timestamp"), "20 minutes", "1 minute"), 
             col("symbol")
         ) \
         .agg(
