@@ -50,8 +50,9 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-    command: >
-      sh -c "python src/send_data.py & wait"
+    command: 
+      ["sleep", "infinity"]
+      # sh -c "python src/send_data.py & wait"
 
 
 
