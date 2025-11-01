@@ -195,7 +195,7 @@ def write_ma_to_postgres(batch_df, batch_id):
                 latest_ma_threshold[row.symbol] = row.ma_5min
                 print(f"Updated MA threshold for {row.symbol}: {row.ma_5min}")
                 continue
-
+        print(f"Processed MA batch {batch_id}")
         conn.commit()
         cursor.close()
         conn.close()

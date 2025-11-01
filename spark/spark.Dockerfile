@@ -1,4 +1,4 @@
-FROM apache/spark:4.0.1-scala2.13-java17-ubuntu
+FROM spark:3.5.0-scala2.12-java17-ubuntu
 
 USER root
 
