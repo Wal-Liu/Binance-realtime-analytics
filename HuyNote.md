@@ -65,27 +65,3 @@ docker exec binance-spark-master /opt/spark/bin/spark-submit   --master spark://
 ## Run Donchian Channel
 ```bash
 docker exec binance-spark-master /opt/spark/bin/spark-submit   --master spark://spark-master:7077    --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.6.0  /opt/workspace/trend/src/DonchianChannel.py
-```
-
-> Vo container Postgres run
-```sql
-ALTER TABLE donchian_channel
-ADD COLUMN breakout_signal TEXT;
-
-UPDATE donchian_channel
-SET breakout_signal =
-  CASE
-    WHEN close_price > upper_band THEN 'BUY'
-    WHEN close_price < lower_band THEN 'SELL'
-    ELSE 'HOLD'
-  END
-WHERE breakout_signal IS NULL;
-
-ALTER TABLE donchian_channel
-ALTER COLUMN breakout_signal SET DEFAULT 'HOLD';
-
-ALTER TABLE donchian_channel
-ALTER COLUMN breakout_signal SET NOT NULL;
-```
-
-> Vo Grafana import file spark-apps/momentum/dashboard/DC.json
