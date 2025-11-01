@@ -6,14 +6,22 @@ from pyspark.sql.types import (
 )
 from pyspark.sql.window import Window
 
+
 KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 KAFKA_SOURCE_TOPIC = "binance_kline_streams"
-KAFKA_OUTPUT_TOPIC = "donchian_signals"
 
 SPARK_MASTER = "spark://spark-master:7077"
 APP_NAME = "Donchian_Channel_Streaming"
 
 DONCHIAN_PERIOD = 20
+
+PG_URL = "jdbc:postgresql://postgres:5432/crypto_db"
+PG_TABLE = "donchian_channel"
+PG_PROPERTIES = {
+    "user": "postgres",
+    "password": "your_password",
+    "driver": "org.postgresql.Driver",
+}
 
 kline_schema = StructType([
     StructField("symbol", StringType(), True),
@@ -47,49 +55,38 @@ def process_donchian_batch(batch_df, epoch_id):
         .select("symbol", "timestamp", "high_price", "low_price", "close_price")
     )
 
-    # Window cho 20 phiên gần nhất
+    # Window Donchian
     donchian_window = Window.partitionBy("symbol").orderBy("timestamp").rowsBetween(-DONCHIAN_PERIOD + 1, 0)
     prev_window = Window.partitionBy("symbol").orderBy("timestamp").rowsBetween(-DONCHIAN_PERIOD, -1)
 
     donchian_df = (
         df
-        .withColumn("upper", F.max("high_price").over(donchian_window))
-        .withColumn("lower", F.min("low_price").over(donchian_window))
-        .withColumn("middle", (F.col("upper") + F.col("lower")) / 2)
+        .withColumn("upper_band", F.max("high_price").over(donchian_window))
+        .withColumn("lower_band", F.min("low_price").over(donchian_window))
+        .withColumn("middle_band", (F.col("upper_band") + F.col("lower_band")) / 2)
         .withColumn("upper_prev", F.max("high_price").over(prev_window))
         .withColumn("lower_prev", F.min("low_price").over(prev_window))
         .withColumn(
-            "signal",
-            F.when(F.col("close_price") > F.col("upper_prev"), F.lit("breakout_up"))
-             .when(F.col("close_price") < F.col("lower_prev"), F.lit("breakout_down"))
-             .otherwise(F.lit("none"))
+            "breakout_signal",
+            F.when(F.col("close_price") > F.col("upper_prev"), F.lit("BUY"))
+             .when(F.col("close_price") < F.col("lower_prev"), F.lit("SELL"))
+             .otherwise(F.lit("HOLD"))
         )
-        .filter(F.col("upper").isNotNull() & F.col("lower").isNotNull())
-        .select("symbol", "timestamp", "close_price", "upper", "lower", "middle", "signal")
+        .filter(F.col("upper_band").isNotNull() & F.col("lower_band").isNotNull())
+        .select("symbol", "timestamp", "close_price", "upper_band", "lower_band", "middle_band", "breakout_signal")
     )
 
-    # Chỉ gửi tín hiệu breakout
-    signals_df = donchian_df.filter(F.col("signal") != "none")
-
-    kafka_out_df = signals_df.select(
-        F.to_json(F.struct(
-            F.col("symbol"),
-            F.col("timestamp"),
-            F.col("close_price"),
-            F.col("upper"),
-            F.col("lower"),
-            F.col("middle"),
-            F.col("signal")
-        )).alias("value")
-    )
-
-    kafka_out_df.write \
-        .format("kafka") \
-        .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP_SERVERS) \
-        .option("topic", KAFKA_OUTPUT_TOPIC) \
+    (
+        donchian_df.write
+        .format("jdbc")
+        .option("url", PG_URL)
+        .option("dbtable", PG_TABLE)
+        .options(**PG_PROPERTIES)
+        .mode("append")
         .save()
+    )
 
-    print(f"Epoch {epoch_id}: Sent {signals_df.count()} signals to topic `{KAFKA_OUTPUT_TOPIC}`")
+    print(f"Epoch {epoch_id}: Saved {donchian_df.count()} rows to PostgreSQL table `{PG_TABLE}`")
 
 def main():
     spark = (
@@ -116,7 +113,6 @@ def main():
         F.from_json(F.col("value").cast("string"), kline_schema).alias("data")
     ).select("data.*")
 
-    # timestamp watermark (2 phút)
     parsed_df = parsed_df.withColumn("timestamp", (F.col("close_time") / 1000).cast("timestamp"))
     parsed_df = parsed_df.withWatermark("timestamp", "2 minutes")
 
@@ -128,7 +124,7 @@ def main():
         .start()
     )
 
-    print(f"Streaming Donchian Channel (N={DONCHIAN_PERIOD}) từ `{KAFKA_SOURCE_TOPIC}` → `{KAFKA_OUTPUT_TOPIC}` ...")
+    print(f"Streaming Donchian Channel (N={DONCHIAN_PERIOD}) from `{KAFKA_SOURCE_TOPIC}` → PostgreSQL `{PG_TABLE}` ...")
     query.awaitTermination()
 
 if __name__ == "__main__":
