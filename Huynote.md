@@ -1,11 +1,17 @@
-/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
-
-/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic binance_kline_streams --from-beginning --max-messages 5
-
-/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic binance_trade_streams --from-beginning --max-messages 5
-
+## Check Kafka
+```bash
+/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
+```
+```bash
+/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic binance_kline_streams --from-beginning --max-messages 5
+```
+```bash
+/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic binance_trade_streams --from-beginning --max-messages 5
+```
+## Postgres
+```bash
 psql -U postgres -d crypto_db
-
+```
 | Mục tiêu                             | Lệnh                        |
 | ------------------------------------ | --------------------------- |
 | Liệt kê database                     | `\l`                        |
@@ -17,26 +23,10 @@ psql -U postgres -d crypto_db
 | Thoát khỏi psql                      | `\q`                        |
 
 
+## Test Spark Kafka
 
-CREATE TABLE IF NOT EXISTS kline_raw (
-    symbol TEXT,
-    interval TEXT,
-    open_time BIGINT,
-    close_time BIGINT,
-    open_price DOUBLE PRECISION,
-    high_price DOUBLE PRECISION,
-    low_price DOUBLE PRECISION,
-    close_price DOUBLE PRECISION,
-    volume DOUBLE PRECISION,
-    quote_volume DOUBLE PRECISION,
-    number_of_trades INTEGER,
-    is_closed BOOLEAN,
-    taker_buy_volume DOUBLE PRECISION,
-    taker_buy_quote_volume DOUBLE PRECISION,
-    event_time BIGINT
-);
-
-
+test.py
+```py
 spark = (
     SparkSession.builder
     .appName("ComputeIndicators")
@@ -62,10 +52,40 @@ query = (
 )
 
 query.awaitTermination()
+```
 
-docker exec binance-spark-master /opt/spark/bin/spark-submit   --master spark://spark-master:7077    /opt/workspace/momentum/src/MFI.py
 
-
+## Run Money Flow Index
+```bash
 docker exec binance-spark-master /opt/spark/bin/spark-submit   --master spark://spark-master:7077   --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.6.0   /opt/workspace/momentum/src/MFI.py
+```
 
+> Vo Grafana import file spark-apps/trend/dashboard/MFI.json
+
+## Run Donchian Channel
+```bash
 docker exec binance-spark-master /opt/spark/bin/spark-submit   --master spark://spark-master:7077    --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.6.0  /opt/workspace/trend/src/DonchianChannel.py
+```
+
+> Vo container Postgres run
+```sql
+ALTER TABLE donchian_channel
+ADD COLUMN breakout_signal TEXT;
+
+UPDATE donchian_channel
+SET breakout_signal =
+  CASE
+    WHEN close_price > upper_band THEN 'BUY'
+    WHEN close_price < lower_band THEN 'SELL'
+    ELSE 'HOLD'
+  END
+WHERE breakout_signal IS NULL;
+
+ALTER TABLE donchian_channel
+ALTER COLUMN breakout_signal SET DEFAULT 'HOLD';
+
+ALTER TABLE donchian_channel
+ALTER COLUMN breakout_signal SET NOT NULL;
+```
+
+> Vo Grafana import file spark-apps/trend/dashboard/MFI.json
