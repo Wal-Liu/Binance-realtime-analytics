@@ -1,0 +1,5 @@
+{
+    "shift_alert_threshold": 0.0001,
+    "surge_alert_threshold": 0.001,
+    "spike_alert_threshold": 0.005
+}
