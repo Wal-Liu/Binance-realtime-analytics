@@ -61,7 +61,6 @@ def write_to_postgres(batch_df, batch_id):
         password=POSTGRE["password"]
     )
     cursor = conn.cursor()
-
     for row in batch_df.collect():
         cursor.execute(
             """
@@ -74,10 +73,10 @@ def write_to_postgres(batch_df, batch_id):
             """,
             (row.window_start, row.window_end, row.symbol, row.aroon_up, row.aroon_down)
         )
-
     conn.commit()
     cursor.close()
     conn.close()
+    print("Insert thành công")
 
 
 # === Spark session ===

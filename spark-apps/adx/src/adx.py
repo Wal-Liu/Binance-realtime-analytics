@@ -52,7 +52,7 @@ def write_to_postgres(batch_df, batch_id):
         return
 
     create_table()
-
+    print("Đang insert")
     conn = psycopg2.connect(
         host=POSTGRE["host"].split(":")[0],
         port=int(POSTGRE["host"].split(":")[1]),

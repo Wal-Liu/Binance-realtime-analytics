@@ -110,7 +110,6 @@ services:
       - postgres
     volumes:
       - grafana-storage:/var/lib/grafana
-
 volumes:
   pgdata:
   grafana-storage:

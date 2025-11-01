@@ -5,3 +5,5 @@
 
 spark-apps/aroon/checkpoints/*
 spark-apps/adx/checkpoints/*
+
+**/logs/**
