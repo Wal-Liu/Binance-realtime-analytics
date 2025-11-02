@@ -1,0 +1,7 @@
+{
+  "host": "localhost",
+  "port": 15432,
+  "database": "crypto_db",
+  "user": "postgres",
+  "password": "your_password"
+}
