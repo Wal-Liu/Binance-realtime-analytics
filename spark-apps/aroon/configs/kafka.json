@@ -1,0 +1,5 @@
+{
+  "bootstrap.servers": "kafka:9092",
+  "topic": "binance_kline_streams",
+  "group_id": "binance-streams-group"
+}

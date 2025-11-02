@@ -31,13 +31,6 @@ Tracking data for three coins: `BTC`, `BNB`, `ETH`.
 - **Stream Processing:** [translate:Apache Spark cluster] computes indicators, monitors, and detects anomalies in data streams.
 - **Storage & Visualization:** Data stored in [translate:PostgreSQL]; analysis results visualized using [translate:Grafana].
 
-## Usage Instructions
-1. Install required libraries (Python, Spark, Kafka, PostgreSQL, Grafana).
-2. Set up the connection to Binance API via `WebSocket`.
-3. Run the ingestion pipeline to push data to Kafka.
-4. Start the Spark cluster for processing and indicator calculation.
-5. Configure Grafana dashboards for data visualization.
-
 ## Demo
 
 ### Volume and MA 
@@ -48,3 +41,31 @@ https://github.com/user-attachments/assets/5afb524f-54a6-4708-a5b8-4ec03f9339b5
 - PostgreSQL, Grafana
 - Binance WebSocket API
 
+## Usage Instructions
+
+### QBV
+```
+docker exec binance-spark-master /opt/spark/bin/spark-submit \
+  --master spark://spark-master:7077 \
+  --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.6.0 \
+  /opt/workspace/trend/src/QBV.py
+```
+
+### BB
+```
+docker exec binance-spark-master /opt/spark/bin/spark-submit \
+  --master spark://spark-master:7077 \
+  --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.6.0 \
+  /opt/workspace/trend/src/BB.py
+```
+
+#### Create table in Postgres
+- Access Postgres Container
+```
+docker exec -it binance-postgres psql -U postgres -d crypto_db
+```
+
+### Volume and MA
+```
+docker exec binance-spark-master ./volume/src/submit.sh
+```

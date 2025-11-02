@@ -1,0 +1,182 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 0,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "grafana-postgresql-datasource" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-RdYlGr" },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "showPoints": "never",
+            "axisPlacement": "auto"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": 0 },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 100 }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0-18701397209",
+      "targets": [
+        {
+          "refId": "A",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT window_end AS \"time\", aroon_up AS \"Aroon Up\", aroon_down AS \"Aroon Down\" FROM crypto_aroon WHERE symbol = '$symbol' ORDER BY window_end;"
+        }
+      ],
+      "title": "Aroon Indicator Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "grafana-postgresql-datasource" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "cellOptions": { "type": "auto" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": 0 },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 100 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 14, "x": 0, "y": 10 },
+      "id": 2,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.0-18701397209",
+      "targets": [
+        {
+          "refId": "B",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT window_start, symbol, aroon_up, aroon_down FROM crypto_aroon WHERE symbol = '$symbol' AND window_start >= $__timeFrom() AND window_start <= $__timeTo() ORDER BY window_start DESC LIMIT 10;"
+        }
+      ],
+      "title": "Latest Aroon Values (Last 10)",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "grafana-postgresql-datasource" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "Uptrend": { "color": "green", "index": 0 },
+                "Downtrend": { "color": "red", "index": 1 },
+                "Neutral": { "color": "yellow", "index": 2 }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 10 },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "/.*/"
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "12.3.0-18701397209",
+      "targets": [
+        {
+          "refId": "C",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT CASE WHEN aroon_up > 70 AND aroon_down < 30 THEN 'Uptrend' WHEN aroon_down > 70 AND aroon_up < 30 THEN 'Downtrend' ELSE 'Neutral' END AS status FROM crypto_aroon WHERE symbol = '$symbol' AND $__timeFilter(window_end) ORDER BY window_end DESC LIMIT 1;"
+        }
+      ],
+      "title": "Market Trend (Realtime)",
+      "transparent": true,
+      "type": "stat"
+    }
+  ],
+  "preload": false,
+  "refresh": "auto",
+  "schemaVersion": 42,
+  "tags": ["crypto", "aroon", "spark", "postgres", "realtime"],
+  "templating": {
+    "list": [
+      {
+        "name": "symbol",
+        "label": "Symbol",
+        "type": "query",
+        "query": "SELECT DISTINCT symbol FROM crypto_aroon ORDER BY symbol;",
+        "datasource": { "type": "postgres", "uid": "grafana-postgresql-datasource" },
+        "current": { "text": "BNBUSDT", "value": "BNBUSDT" },
+        "refresh": 2,
+        "includeAll": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Crypto Aroon Realtime Dashboard Official",
+  "uid": "aroon-dashboard-official",
+  "version": 1
+}

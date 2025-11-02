@@ -71,8 +71,8 @@ def create_tables():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_ma_time_start ON crypto_ma(time_start);")
 
         # Bảng alert
-        drop_alert_table = "DROP TABLE IF EXISTS crypto_alert;"
-        cursor.execute(drop_alert_table)
+        # drop_alert_table = "DROP TABLE IF EXISTS crypto_alert;"
+        # cursor.execute(drop_alert_table)
         create_alert_table = """
         CREATE TABLE IF NOT EXISTS crypto_alert (
             id SERIAL PRIMARY KEY,
@@ -195,7 +195,7 @@ def write_ma_to_postgres(batch_df, batch_id):
                 latest_ma_threshold[row.symbol] = row.ma_5min
                 print(f"Updated MA threshold for {row.symbol}: {row.ma_5min}")
                 continue
-
+        print(f"Processed MA batch {batch_id}")
         conn.commit()
         cursor.close()
         conn.close()
