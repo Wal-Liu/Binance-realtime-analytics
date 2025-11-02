@@ -103,13 +103,18 @@ services:
     image: grafana/grafana:12.3.0-18701397209
     container_name: binance-grafana
     environment:
+      GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: your_grafana_password
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
     ports:
       - "13000:3000"
     depends_on:
       - postgres
     volumes:
       - grafana-storage:/var/lib/grafana
+      - ./spark-apps/provisioning:/etc/grafana/provisioning
+      - ./spark-apps/provisioning/dashboards:/etc/grafana/dashboards
+
 volumes:
   pgdata:
   grafana-storage:
