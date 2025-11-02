@@ -43,6 +43,21 @@ https://github.com/user-attachments/assets/5afb524f-54a6-4708-a5b8-4ec03f9339b5
 
 ## Usage Instructions
 
+## Check your Kafka
+```bash
+/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
+```
+```bash
+/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic binance_kline_streams --from-beginning --max-messages 5
+```
+```bash
+/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic binance_trade_streams --from-beginning --max-messages 5
+```
+## Check your Postgres
+```bash
+psql -U postgres -d crypto_db
+```
+
 ### QBV
 ```
 docker exec binance-spark-master /opt/spark/bin/spark-submit \
@@ -69,3 +84,4 @@ docker exec -it binance-postgres psql -U postgres -d crypto_db
 ```
 docker exec binance-spark-master ./volume/src/submit.sh
 ```
+
