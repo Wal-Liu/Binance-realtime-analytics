@@ -115,6 +115,19 @@ services:
       - ./spark-apps/provisioning:/etc/grafana/provisioning
       - ./spark-apps/provisioning/dashboards:/etc/grafana/dashboards
 
+  binance-intelligence:
+    build:
+      context: ./intelligence
+      dockerfile: intelligence.Dockerfile
+    container_name: binance-intelligence
+    volumes:
+      - ./intelligence:/app
+    depends_on:
+      - postgres
+      - kafka
+    command: >
+      sh -c "python suggestion.py & wait"
+
 volumes:
   pgdata:
   grafana-storage:

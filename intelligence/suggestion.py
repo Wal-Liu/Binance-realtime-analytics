@@ -285,4 +285,9 @@ def main():
         print("Database connection closed")
 
 if __name__ == "__main__":
-    main()
+    cnt = 0
+    while True:
+        main()
+        print(f"Completed iteration {cnt + 1}, sleeping for 30 seconds...")
+        time.sleep(30)
+

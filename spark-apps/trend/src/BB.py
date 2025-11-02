@@ -102,11 +102,22 @@ def create_table_if_not_exists():
 
 
 def main():
-    spark = SparkSession.builder \
-        .appName("BinanceBollingerBands") \
-        .master("spark://spark-master:7077") \
+    packages = [
+        "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0",
+        "org.postgresql:postgresql:42.6.0", # Đảm bảo phiên bản này tồn tại
+    ]
+    APP_NAME = 'BinanceBollingerBands'
+    spark = (
+        SparkSession.builder
+        .appName(APP_NAME)
+        .master("spark://spark-master:7077")
+        .config("spark.cores.max", "2")          # Tổng core tối đa toàn job
+        .config("spark.executor.cores", "2")     # Mỗi executor dùng 2 core
+        .config("spark.executor.instances", "1") # Chỉ tạo 1 executor
+        .config("spark.driver.cores", "2")       # Driver cũng chỉ dùng 2 core
+        .config("spark.jars.packages", ",".join(packages))
         .getOrCreate()
-
+    )
     spark.sparkContext.setLogLevel("ERROR")
 
     print("Đang kiểm tra/tạo bảng PostgreSQL...")

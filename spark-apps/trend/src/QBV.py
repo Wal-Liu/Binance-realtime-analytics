@@ -160,11 +160,17 @@ def main():
     ]
 
     spark = (
-        SparkSession.builder.appName(APP_NAME)
-        .master(SPARK_MASTER)
+        SparkSession.builder
+        .appName(APP_NAME)
+        .master("spark://spark-master:7077")
+        .config("spark.cores.max", "2")          # Tổng core tối đa toàn job
+        .config("spark.executor.cores", "2")     # Mỗi executor dùng 2 core
+        .config("spark.executor.instances", "1") # Chỉ tạo 1 executor
+        .config("spark.driver.cores", "2")       # Driver cũng chỉ dùng 2 core
         .config("spark.jars.packages", ",".join(packages))
         .getOrCreate()
     )
+
 
     spark.sparkContext.setLogLevel("WARN")
     print("Spark Session đã sẵn sàng.")
