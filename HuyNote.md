@@ -65,3 +65,21 @@ docker exec binance-spark-master /opt/spark/bin/spark-submit   --master spark://
 ## Run Donchian Channel
 ```bash
 docker exec binance-spark-master /opt/spark/bin/spark-submit   --master spark://spark-master:7077    --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,org.postgresql:postgresql:42.6.0  /opt/workspace/trend/src/DonchianChannel.py
+
+
+
+CREATE TABLE IF NOT EXISTS donchian_channel_tbl (
+  symbol TEXT,
+  timestamp TIMESTAMP,
+  close_price DOUBLE PRECISION,
+  upper_band DOUBLE PRECISION,
+  lower_band DOUBLE PRECISION,
+  middle_band DOUBLE PRECISION,
+  breakout_signal TEXT,
+  resolution TEXT,     
+  created_at TIMESTAMP DEFAULT now(),
+  PRIMARY KEY (symbol, timestamp, resolution)
+);
+
+ALTER TABLE donchian_channel_tbl ADD COLUMN IF NOT EXISTS breakout_signal TEXT;
+ALTER TABLE donchian_channel_tbl ADD COLUMN IF NOT EXISTS resolution TEXT;
