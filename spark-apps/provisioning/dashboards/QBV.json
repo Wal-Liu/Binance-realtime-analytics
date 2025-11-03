@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 0,
+  "id": 6,
   "links": [],
   "panels": [
     {
@@ -37,7 +37,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "df2swp52hefpcc"
+        "uid": "P78DC24F8AA21B398"
       },
       "fieldConfig": {
         "defaults": {
@@ -173,7 +173,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "df2swp52hefpcc"
+        "uid": "P78DC24F8AA21B398"
       },
       "fieldConfig": {
         "defaults": {
@@ -309,7 +309,7 @@
     {
       "datasource": {
         "type": "grafana-postgresql-datasource",
-        "uid": "df2swp52hefpcc"
+        "uid": "P78DC24F8AA21B398"
       },
       "fieldConfig": {
         "defaults": {
@@ -428,6 +428,98 @@
       ],
       "title": "Total Quote Volume for BNBUSDT",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "uid": "P78DC24F8AA21B398"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "dynamicHeight": true,
+              "type": "markdown"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "suggestion"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 400
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 18,
+        "w": 23,
+        "x": 0,
+        "y": 24
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": false
+      },
+      "pluginVersion": "12.3.0-18701397209",
+      "targets": [
+        {
+          "dataset": "crypto_db",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT suggestion, symbol, analysis_time\nFROM qvb_1m_suggest\nORDER BY analysis_time DESC\nLIMIT 1;\n",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "AI suggestion",
+      "type": "table"
     }
   ],
   "preload": false,
@@ -445,5 +537,5 @@
   "timezone": "browser",
   "title": "Volume Analysis",
   "uid": "ad9h465",
-  "version": 2
+  "version": 1
 }
