@@ -3,11 +3,11 @@
 ## Teamate
 | Student ID | Name              | GitHub       | Task                                                  |
 | ---------- | ----------------- | ------------ | ----------------------------------------------------- |
-| 22133026   | Nguyễn Quốc Huy   | @huy-dataguy | Money Flow Index (MFI) & Donchian Channels (DC)       |
-| 22133029   | Nguyễn Nam Hy     | @ngnamhy     | Aroon Indicator & Average Directional Index (ADX)     |
-| 22133045   | Nguyễn Minh Quang | @DOCUTEE     | On-Balance Volume (OBV) & Bollinger Bands             |
-| 22133056   | Nguyễn Quốc Thịnh | @Jayus52Hz   | Relative Strength Index (RSI) & Stochastic Oscillator |
-| 22133064   | Lưu Vĩnh Tường    | @Wal-Liu     | Volume & Moving Average (MA)                          | 
+| 22133026   | Nguyễn Quốc Huy   | [@huy-dataguy](https://github.com/huy-dataguy) | Money Flow Index (MFI) & Donchian Channels (DC)       |
+| 22133029   | Nguyễn Nam Hy     | [@ngnamhy](https://github.com/ngnamhy)     | Aroon Indicator & Average Directional Index (ADX)     |
+| 22133045   | Nguyễn Minh Quang | [@DOCUTEE](https://github.com/DOCUTEE)    | On-Balance Volume (OBV) & Bollinger Bands             |
+| 22133056   | Nguyễn Quốc Thịnh | [@Jayus52Hz](https://github.com/Jayus52Hz)   | Relative Strength Index (RSI) & Stochastic Oscillator |
+| 22133064   | Lưu Vĩnh Tường    | [@Wal-Liu](https://github.com/Wal-Liu)     | Volume & Moving Average (MA)                          | 
 ## Introduction
 Our team builds a `real-time data pipeline` system to automatically collect, calculate financial technical indicators, and instantly visualize market analysis results in the cryptocurrency market. This system helps users monitor and evaluate the market for faster and more accurate decision-making.
 
@@ -43,19 +43,9 @@ https://github.com/user-attachments/assets/5afb524f-54a6-4708-a5b8-4ec03f9339b5
 
 ## Usage Instructions
 
-## Check your Kafka
-```bash
-/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list
+### Start project
 ```
-```bash
-/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic binance_kline_streams --from-beginning --max-messages 5
-```
-```bash
-/opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic binance_trade_streams --from-beginning --max-messages 5
-```
-## Check your Postgres
-```bash
-psql -U postgres -d crypto_db
+docker compose up -d
 ```
 
 ### QBV
@@ -74,14 +64,27 @@ docker exec binance-spark-master /opt/spark/bin/spark-submit \
   /opt/workspace/trend/src/BB.py
 ```
 
-#### Create table in Postgres
-- Access Postgres Container
-```
-docker exec -it binance-postgres psql -U postgres -d crypto_db
-```
-
 ### Volume and MA
 ```
 docker exec binance-spark-master ./volume/src/submit.sh
 ```
 
+### RSI
+```
+docker exec binance-spark-master ./momentum/src/run_RSI.sh
+```
+
+### MFI
+```
+docker exec binance-spark-master ./momentum/src/run_stochastic_oscillator.sh
+```
+
+### Aroon
+```
+docker exec binance-spark-master ./aroon/src/run_Aroon.sh
+```
+
+### Adx
+```
+docker exec binance-spark-master ./adx/src/run_Adx.sh
+```
