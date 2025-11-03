@@ -1,7 +1,7 @@
 # Real-time Crypto Market Data Processing System
 
-## Teamate
-| Student ID | Name              | GitHub       | Task                                                  |
+## Teammates
+| Student ID | Name              | GitHub       | Role                                                 |
 | ---------- | ----------------- | ------------ | ----------------------------------------------------- |
 | 22133026   | Nguyễn Quốc Huy   | [@huy-dataguy](https://github.com/huy-dataguy) | Money Flow Index (MFI) & Donchian Channels (DC)       |
 | 22133029   | Nguyễn Nam Hy     | [@ngnamhy](https://github.com/ngnamhy)     | Aroon Indicator & Average Directional Index (ADX)     |
@@ -21,15 +21,26 @@ Specifically, we use two main data types:
 Tracking data for three coins: `BTC`, `BNB`, `ETH`.
 
 ## Technical Indicators Calculated
-- Trend
-- Momentum
-- Volume
-- Volatility
+
+* **QBV (Quote-Based Volume):** Measures market activity intensity based on quote volume.
+* **BB (Bollinger Bands):** Identifies volatility and potential breakout zones.
+* **Volume MA (Moving Average of Volume):** Tracks average trading volume trends over time.
+* **RSI (Relative Strength Index):** Evaluates momentum and overbought/oversold market conditions.
+* **MFI (Money Flow Index):** Combines price and volume to assess buying and selling pressure.
+* **Aroon:** Detects trend strength and potential trend reversals.
+* **ADX (Average Directional Index):** Quantifies overall market trend strength.
+
 
 ## System Architecture
-- **Ingestion:** Python connects to Binance [translate:WebSocket] to fetch data and push into [translate:Apache Kafka].
-- **Stream Processing:** [translate:Apache Spark cluster] computes indicators, monitors, and detects anomalies in data streams.
-- **Storage & Visualization:** Data stored in [translate:PostgreSQL]; analysis results visualized using [translate:Grafana].
+- **Ingestion**: Python connects to Binance WebSocket to continuously stream market data and publishes it to Apache Kafka for buffering and distribution.
+
+- **Stream Processing**: Apache Spark consumes data from Kafka, processes real-time metrics, computes analytics, and detects trading patterns or anomalies.
+
+- **Storage & Visualization**: Processed data is persisted in PostgreSQL for query and analysis. Grafana connects to PostgreSQL to visualize key insights and market trends.
+
+- **AI Integration**: Gemini (LLM) retrieves data from PostgreSQL, reviews Grafana dashboards, and provides automated recommendations or insights for decision-making.
+
+![System Architecture](https://github.com/Wal-Liu/Binance-realtime-analytics/tree/main/image_videos/SystemArchitecture.png)
 
 ## Demo
 
