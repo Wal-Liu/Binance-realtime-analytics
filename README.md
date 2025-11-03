@@ -40,7 +40,7 @@ Tracking data for three coins: `BTC`, `BNB`, `ETH`.
 
 - **AI Integration**: Gemini (LLM) retrieves data from PostgreSQL, reviews Grafana dashboards, and provides automated recommendations or insights for decision-making.
 
-![System Architecture](https://github.com/Wal-Liu/Binance-realtime-analytics/tree/main/image_videos/SystemArchitecture.png)
+![System Architecture](image_videos/SystemArchitecture.png)
 
 ## Demo
 
